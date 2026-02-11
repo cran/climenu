@@ -9,9 +9,8 @@ knitr::opts_chunk$set(
 # library(climenu)
 
 ## ----install, eval=FALSE------------------------------------------------------
-# # Install from GitHub
-# # install.packages("remotes")
-# remotes::install_github("PetrCala/climenu")
+# # Install from CRAN
+# install.packages("climenu")
 # 
 # # For optimal keyboard support, also install keypress:
 # install.packages("keypress")
@@ -88,6 +87,16 @@ knitr::opts_chunk$set(
 #   return_index = TRUE
 # )
 # # Returns: c(1, 3, 4) (if user selected Alpha, Gamma, Delta)
+
+## ----select-all---------------------------------------------------------------
+# # Enable the "Select all" option
+# methods <- checkbox(
+#   choices = c("method_a", "method_b", "method_c", "method_d"),
+#   allow_select_all = TRUE,
+#   prompt = "Select methods to run:"
+# )
+# # The first item in the menu will be "Select all" / "Deselect all"
+# # It toggles all items at once and is never included in the result
 
 ## ----install-keypress, eval=FALSE---------------------------------------------
 # install.packages("keypress")

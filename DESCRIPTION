@@ -1,6 +1,6 @@
 Package: climenu
 Title: Interactive Command-Line Menus
-Version: 0.1.3
+Version: 0.1.4
 Authors@R: 
     person("Petr", "Čala", , "61505008@fsv.cuni.cz", role = c("aut", "cre"))
 Author: Petr Čala [aut, cre]
@@ -26,6 +26,6 @@ Config/testthat/parallel: TRUE
 Encoding: UTF-8
 RoxygenNote: 7.3.3
 NeedsCompilation: no
-Packaged: 2026-02-03 07:07:04 UTC; runner
+Packaged: 2026-02-11 11:06:42 UTC; runner
 Repository: CRAN
-Date/Publication: 2026-02-06 13:40:06 UTC
+Date/Publication: 2026-02-11 11:30:07 UTC
