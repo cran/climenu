@@ -11,9 +11,6 @@ knitr::opts_chunk$set(
 ## ----install, eval=FALSE------------------------------------------------------
 # # Install from CRAN
 # install.packages("climenu")
-# 
-# # For optimal keyboard support, also install keypress:
-# install.packages("keypress")
 
 ## ----single-basic-------------------------------------------------------------
 # # Basic single selection
@@ -97,9 +94,6 @@ knitr::opts_chunk$set(
 # )
 # # The first item in the menu will be "Select all" / "Deselect all"
 # # It toggles all items at once and is never included in the result
-
-## ----install-keypress, eval=FALSE---------------------------------------------
-# install.packages("keypress")
 
 ## ----config-wizard------------------------------------------------------------
 # # Ask user to configure application settings
@@ -239,7 +233,4 @@ knitr::opts_chunk$set(
 # 
 #   return(config)
 # }
-
-## ----fix-arrows, eval=FALSE---------------------------------------------------
-# install.packages("keypress")
 

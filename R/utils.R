@@ -1,3 +1,36 @@
+climenu_env <- new.env(parent = emptyenv())
+
+#' Wrapper around base `readline` to allow mocking in tests
+#' @keywords internal
+#' @noRd
+read_line <- function(prompt = "") {
+  readline(prompt = prompt)
+}
+
+#' Check whether the current terminal supports single-key input
+#' @keywords internal
+#' @noRd
+keypress_supported <- function() {
+  tryCatch(
+    isTRUE(keypress::has_keypress_support()),
+    error = function(e) FALSE
+  )
+}
+
+#' Emit a one-time info message explaining the fallback
+#' @keywords internal
+#' @noRd
+notify_fallback_once <- function() {
+  if (isTRUE(climenu_env$fallback_notice_shown)) {
+    return(invisible())
+  }
+  cli::cli_alert_info(
+    "Your terminal does not support single-key input (e.g. RStudio or RGui on Windows). Using numbered-prompt mode."
+  )
+  climenu_env$fallback_notice_shown <- TRUE
+  invisible()
+}
+
 #' Validate choices parameter
 #' @keywords internal
 #' @noRd
@@ -136,80 +169,40 @@ render_menu <- function(choices, cursor_pos, selected_indices, type = c("select"
 
 #' Get single keypress from user
 #' @keywords internal
+#' @importFrom keypress keypress
 #' @noRd
 get_keypress <- function() {
-  # Check for keypress package (best option for single-key capture)
-  if (requireNamespace("keypress", quietly = TRUE)) {
-    key <- keypress::keypress()
+  key <- keypress::keypress()
 
-    # Map special keys
-    if (key == "up") {
-      return("up")
-    }
-    if (key == "down") {
-      return("down")
-    }
-    if (key == "left") {
-      return("left")
-    }
-    if (key == "right") {
-      return("right")
-    }
-    if (key == "\r" || key == "\n") {
-      return("enter")
-    }
-    if (key == " ") {
-      return("space")
-    }
-    if (key == "\033" || key == "\x1b") {
-      return("esc")
-    }
-    if (key == "k") {
-      return("up")
-    }
-    if (key == "j") {
-      return("down")
-    }
-    if (tolower(key) == "q") {
-      return("esc")
-    }
-
-    return(key)
-  }
-
-  # Fallback: Use readline (requires Enter key)
-  # Show hint only once per session
-  env <- get("climenu_env", envir = asNamespace("climenu"))
-  if (!exists(".climenu_keypress_hint_shown", envir = env)) {
-    cli::cli_alert_info("For better keyboard support, install: {.code install.packages('keypress')}")
-    assign(".climenu_keypress_hint_shown", TRUE, envir = env)
-  }
-
-  key <- readline(prompt = "Choice (\u2191/\u2193/j/k/number/Enter): ")
-
-  # Map text input to commands
-  key <- tolower(trimws(key))
-
-  if (key == "" || key == "enter") {
-    return("enter")
-  }
-  if (key == " " || key == "space") {
-    return("space")
-  }
-  if (key == "up" || key == "u" || key == "k") {
+  if (key == "up") {
     return("up")
   }
-  if (key == "down" || key == "d" || key == "j") {
+  if (key == "down") {
     return("down")
   }
-  if (key == "esc" || key == "q" || key == "quit") {
+  if (key == "left") {
+    return("left")
+  }
+  if (key == "right") {
+    return("right")
+  }
+  if (key == "\r" || key == "\n") {
+    return("enter")
+  }
+  if (key == " ") {
+    return("space")
+  }
+  if (key == "\033" || key == "\x1b") {
     return("esc")
   }
-
-  # Try to parse as number (for quick selection by index)
-  num <- suppressWarnings(as.integer(key))
-  if (!is.na(num)) {
-    return(list(type = "number", value = num))
+  if (key == "k") {
+    return("up")
+  }
+  if (key == "j") {
+    return("down")
+  }
+  if (tolower(key) == "q") {
+    return("esc")
   }
 
   key

@@ -1,6 +1,6 @@
 Package: climenu
 Title: Interactive Command-Line Menus
-Version: 0.1.5
+Version: 0.1.7
 Authors@R: 
     person("Petr", "Čala", , "61505008@fsv.cuni.cz", role = c("aut", "cre"))
 Author: Petr Čala [aut, cre]
@@ -17,15 +17,15 @@ License: MIT + file LICENSE
 URL: https://github.com/PetrCala/climenu
 BugReports: https://github.com/PetrCala/climenu/issues
 Depends: R (>= 4.0.0)
-Imports: cli (>= 3.6.0)
-Suggests: covr, devtools, keypress, knitr, rmarkdown, roxygen2 (>=
-        7.0.0), testthat (>= 3.0.0)
+Imports: cli (>= 3.6.0), keypress (>= 1.0.0)
+Suggests: covr, devtools, knitr, rmarkdown, roxygen2 (>= 7.0.0),
+        testthat (>= 3.0.0)
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Config/testthat/parallel: TRUE
 Encoding: UTF-8
 RoxygenNote: 7.3.3
 NeedsCompilation: no
-Packaged: 2026-02-11 13:00:43 UTC; runner
+Packaged: 2026-04-15 02:00:10 UTC; runner
 Repository: CRAN
-Date/Publication: 2026-02-18 12:10:02 UTC
+Date/Publication: 2026-04-15 06:30:55 UTC
