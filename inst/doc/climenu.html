@@ -48,8 +48,9 @@ overflow: visible;
 }
 </style>
 <style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -754,12 +755,14 @@ toggle at the top (default: <code>FALSE</code>).</li>
 <h2>Troubleshooting</h2>
 <div id="arrow-keys-not-working" class="section level3">
 <h3>Arrow keys not working</h3>
-<p>Single-key input requires a real terminal (e.g. macOS Terminal,
-iTerm2, Linux terminals, Windows Terminal, Rterm). In RStudio or RGui on
-Windows, <code>keypress::keypress()</code> is not supported —
-<code>climenu</code> detects this automatically and switches to the
-numbered-prompt fallback described above. Run from a supported terminal
-if you want live arrow-key navigation.</p>
+<p>Live menus require a real terminal (e.g. macOS Terminal, iTerm2,
+Linux terminals, Windows Terminal, Rterm) with both single-key input and
+ANSI escape support. In RStudio or RGui on Windows,
+<code>keypress::keypress()</code> is not supported, and some consoles
+cannot process ANSI escapes — <code>climenu</code> detects both cases
+automatically and switches to the numbered-prompt fallback described
+above. Run from a supported terminal if you want live arrow-key
+navigation.</p>
 </div>
 <div id="menu-doesnt-display-properly" class="section level3">
 <h3>Menu doesn’t display properly</h3>
