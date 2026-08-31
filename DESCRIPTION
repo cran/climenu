@@ -1,6 +1,6 @@
 Package: climenu
 Title: Interactive Command-Line Menus
-Version: 0.1.8
+Version: 0.2.0
 Authors@R: 
     person("Petr", "Čala", , "61505008@fsv.cuni.cz", role = c("aut", "cre"))
 Author: Petr Čala [aut, cre]
@@ -24,8 +24,8 @@ VignetteBuilder: knitr
 Config/testthat/edition: 3
 Config/testthat/parallel: TRUE
 Encoding: UTF-8
-Config/roxygen2/version: 8.0.0
+Config/roxygen2/version: 8.1.0
 NeedsCompilation: no
-Packaged: 2026-07-08 13:53:24 UTC; runner
+Packaged: 2026-08-31 09:09:42 UTC; runner
 Repository: CRAN
-Date/Publication: 2026-07-08 14:30:02 UTC
+Date/Publication: 2026-08-31 17:00:28 UTC

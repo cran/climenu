@@ -2,7 +2,7 @@
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  eval = FALSE  # Set to FALSE since interactive examples can't run in vignettes
+  eval = FALSE # Set to FALSE since interactive examples can't run in vignettes
 )
 
 ## ----setup--------------------------------------------------------------------
@@ -58,7 +58,7 @@ knitr::opts_chunk$set(
 # # Pre-select by index
 # selected <- checkbox(
 #   choices = c("Option A", "Option B", "Option C", "Option D"),
-#   selected = c(1, 3),  # First and third items
+#   selected = c(1, 3), # First and third items
 #   prompt = "Modify your selection:"
 # )
 
@@ -66,7 +66,7 @@ knitr::opts_chunk$set(
 # # Start with cursor on the second option
 # choice <- select(
 #   choices = c("Small", "Medium", "Large"),
-#   selected = 2,  # or "Medium"
+#   selected = 2, # or "Medium"
 #   prompt = "Select size:"
 # )
 
@@ -95,6 +95,25 @@ knitr::opts_chunk$set(
 # # The first item in the menu will be "Select all" / "Deselect all"
 # # It toggles all items at once and is never included in the result
 
+## ----named-choices------------------------------------------------------------
+# action <- select(
+#   c("Run methods" = "run", "Adjust options" = "options", "Quit" = "quit"),
+#   prompt = "What next?"
+# )
+# # The menu displays "Run methods", "Adjust options", "Quit"
+# # Returns: "run", "options", or "quit"
+
+## ----descriptions-------------------------------------------------------------
+# screen <- select(
+#   c("Overview", "Columns", "Studies"),
+#   descriptions = c(
+#     "size and missingness summary",
+#     "role and type per column",
+#     "per-study estimate counts"
+#   ),
+#   prompt = "Preview data"
+# )
+
 ## ----config-wizard------------------------------------------------------------
 # # Ask user to configure application settings
 # cat("\n=== Application Configuration ===\n")
@@ -108,7 +127,7 @@ knitr::opts_chunk$set(
 # # Enable features
 # features <- checkbox(
 #   choices = c("Logging", "Caching", "Analytics", "Debug Mode"),
-#   selected = c("Logging", "Caching"),  # Sensible defaults
+#   selected = c("Logging", "Caching"), # Sensible defaults
 #   prompt = "Enable features:"
 # )
 # 
@@ -203,7 +222,7 @@ knitr::opts_chunk$set(
 # # This will work in both interactive and non-interactive modes
 # choice <- select(
 #   choices = c("Option 1", "Option 2", "Option 3"),
-#   selected = 1  # Fallback for non-interactive
+#   selected = 1 # Fallback for non-interactive
 # )
 # 
 # # In non-interactive mode: issues warning and returns "Option 1"

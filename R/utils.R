@@ -36,7 +36,7 @@ notify_fallback_once <- function() {
     return(invisible())
   }
   cli::cli_alert_info(
-    "Your terminal does not support live menus (single-key input and ANSI escapes, e.g. RStudio or RGui on Windows). Using numbered-prompt mode."
+    "Live menus need single-key input and ANSI escapes; this terminal lacks at least one (e.g. RStudio or RGui on Windows). Using numbered-prompt mode."
   )
   climenu_env$fallback_notice_shown <- TRUE
   invisible()
@@ -55,6 +55,10 @@ validate_choices <- function(choices) {
   if (any(is.na(choices))) {
     cli::cli_abort("choices must not contain NA values")
   }
+  labels <- names(choices)
+  if (!is.null(labels) && (anyNA(labels) || !all(nzchar(labels)))) {
+    cli::cli_abort("names(choices) must provide a non-empty label for every choice")
+  }
 }
 
 #' Validate max_visible parameter
@@ -69,6 +73,74 @@ validate_max_visible <- function(max_visible) {
     cli::cli_abort("max_visible must be NULL or a single number >= 1")
   }
   invisible()
+}
+
+#' Split choices into displayed labels and returned values
+#'
+#' Named vectors separate display text from return values: the names are the
+#' labels shown in the menu, the (unnamed) values are what gets returned.
+#' Unnamed vectors are displayed and returned as-is.
+#' @keywords internal
+#' @noRd
+resolve_choices <- function(choices) {
+  labels <- names(choices)
+  if (is.null(labels)) {
+    labels <- choices
+  }
+  list(labels = unname(labels), values = unname(choices))
+}
+
+#' Validate the descriptions parameter
+#' @keywords internal
+#' @noRd
+validate_descriptions <- function(descriptions, choices) {
+  if (is.null(descriptions)) {
+    return(invisible())
+  }
+  if (!is.character(descriptions) || length(descriptions) != length(choices)) {
+    cli::cli_abort("descriptions must be NULL or a character vector with one entry per choice")
+  }
+  if (anyNA(descriptions)) {
+    cli::cli_abort("descriptions must not contain NA values")
+  }
+  invisible()
+}
+
+#' Validate a single-logical flag parameter
+#' @keywords internal
+#' @noRd
+validate_flag <- function(value, name) {
+  if (!is.logical(value) || length(value) != 1 || is.na(value)) {
+    cli::cli_abort("{name} must be a single logical value")
+  }
+  invisible()
+}
+
+#' Pad a possibly styled string to a display width with plain spaces
+#' @keywords internal
+#' @noRd
+ansi_pad <- function(x, width) {
+  pad <- width - cli::ansi_nchar(x)
+  paste0(x, strrep(" ", max(pad, 0L)))
+}
+
+#' Compose numbered-fallback rows: padded labels with dim descriptions
+#'
+#' Labels are padded only on rows that carry a description, so the dim column
+#' aligns without leaving trailing whitespace on description-less rows.
+#' @keywords internal
+#' @noRd
+compose_menu_rows <- function(labels, descriptions) {
+  if (is.null(descriptions)) {
+    return(labels)
+  }
+  label_width <- max(cli::ansi_nchar(labels))
+  vapply(seq_along(labels), function(i) {
+    if (!nzchar(descriptions[[i]])) {
+      return(labels[[i]])
+    }
+    paste0(ansi_pad(labels[[i]], label_width), "  ", cli::col_grey(descriptions[[i]]))
+  }, character(1), USE.NAMES = FALSE)
 }
 
 #' Normalize selected parameter to indices
@@ -86,7 +158,10 @@ normalize_selected <- function(selected, choices, multiple = FALSE) {
       indices <- indices[indices >= 1 & indices <= length(choices)]
     }
   } else if (is.character(selected)) {
-    indices <- which(choices %in% selected)
+    indices <- which(unname(choices) %in% selected)
+    if (length(indices) == 0 && !is.null(names(choices))) {
+      indices <- which(names(choices) %in% selected)
+    }
     if (length(indices) == 0) {
       cli::cli_warn("None of the selected values found in choices. Ignoring.")
       return(NULL)
@@ -131,7 +206,7 @@ menu_symbols <- function() {
 #' @noRd
 render_menu <- function(choices, cursor_pos, selected_indices, type = c("select", "checkbox"),
                         window_offset = 1L, max_visible = NULL, allow_select_all = FALSE,
-                        select_all_text = NULL) {
+                        select_all_text = NULL, descriptions = NULL, replace_lines = 0L) {
   type <- match.arg(type)
 
   syms <- menu_symbols()
@@ -140,6 +215,8 @@ render_menu <- function(choices, cursor_pos, selected_indices, type = c("select"
   width <- cli::console_width()
 
   n_choices <- length(choices)
+  # Pad labels only on rows that carry a description, so the dim column aligns
+  label_width <- if (is.null(descriptions)) 0L else max(cli::ansi_nchar(choices))
   effective_length <- if (allow_select_all) n_choices + 1L else n_choices
 
   # Determine visible range (accounting for special option if enabled)
@@ -152,20 +229,18 @@ render_menu <- function(choices, cursor_pos, selected_indices, type = c("select"
     visible_end <- min(window_offset + max_visible - 1L, effective_length)
   }
 
-  # Track lines for clearing later
+  # Collect the frame lines; emit_frame() writes them in one go at the end
   lines <- character(0)
 
-  emit_line <- function(line) {
-    line <- cli::ansi_strtrim(line, width)
-    cat(line, "\n", sep = "")
-    line
+  trim_line <- function(line) {
+    cli::ansi_strtrim(line, width)
   }
 
   # Show indicator if there are items above
   items_above <- visible_start - 1L
   if (items_above > 0) {
     indicator <- cli::col_silver(sprintf("%s %d more above", syms$arrow_up, items_above))
-    lines <- c(lines, emit_line(indicator))
+    lines <- c(lines, trim_line(indicator))
   }
 
   # Render visible items
@@ -186,26 +261,37 @@ render_menu <- function(choices, cursor_pos, selected_indices, type = c("select"
         line <- cli::col_silver(line)
       }
 
-      lines <- c(lines, emit_line(line))
+      lines <- c(lines, trim_line(line))
     } else {
       # Render normal choice item
       # Map position to choice index (position 2 = index 1, etc.)
       choice_index <- if (allow_select_all) pos - 1L else pos
       is_selected <- choice_index %in% selected_indices
 
-      if (type == "checkbox") {
-        checkbox_mark <- if (is_selected) syms$checkbox_on else syms$checkbox_off
-        line <- sprintf("%s %s %s", cursor_mark, checkbox_mark, choices[choice_index])
-      } else {
-        line <- sprintf("%s %s", cursor_mark, choices[choice_index])
+      label <- choices[choice_index]
+      desc <- if (is.null(descriptions)) "" else descriptions[choice_index]
+      if (nzchar(desc)) {
+        label <- ansi_pad(label, label_width)
       }
 
-      # Apply styling
+      if (type == "checkbox") {
+        checkbox_mark <- if (is_selected) syms$checkbox_on else syms$checkbox_off
+        line <- sprintf("%s %s %s", cursor_mark, checkbox_mark, label)
+      } else {
+        line <- sprintf("%s %s", cursor_mark, label)
+      }
+
+      # Highlight only the label part under the cursor; the description keeps
+      # its dim color, so an SGR reset inside the label cannot bleed into the
+      # highlight.
       if (is_cursor) {
         line <- cli::col_cyan(line)
       }
+      if (nzchar(desc)) {
+        line <- paste0(line, "  ", cli::col_grey(desc))
+      }
 
-      lines <- c(lines, emit_line(line))
+      lines <- c(lines, trim_line(line))
     }
   }
 
@@ -213,8 +299,10 @@ render_menu <- function(choices, cursor_pos, selected_indices, type = c("select"
   items_below <- effective_length - visible_end
   if (items_below > 0) {
     indicator <- cli::col_silver(sprintf("%s %d more below", syms$arrow_down, items_below))
-    lines <- c(lines, emit_line(indicator))
+    lines <- c(lines, trim_line(indicator))
   }
+
+  emit_frame(lines, replace_lines)
 
   return(lines)
 }
@@ -223,9 +311,10 @@ render_menu <- function(choices, cursor_pos, selected_indices, type = c("select"
 #'
 #' keypress::keypress() returns special keys as named strings ("up",
 #' "down", "enter", "escape", ...) on every platform; regular keys come
-#' back as the character itself (space is " ").
+#' back as the character itself (space is " "). The call stays
+#' namespace-qualified (no importFrom): the `::` lookup is live, which is
+#' what lets tests mock keypress in its own namespace.
 #' @keywords internal
-#' @importFrom keypress keypress
 #' @noRd
 get_keypress <- function() {
   key <- keypress::keypress()
@@ -246,23 +335,60 @@ get_keypress <- function() {
   key
 }
 
-#' Move cursor up n lines
+#' Emit one menu frame as a single atomic write
+#'
+#' Erasing and repainting line by line lets the terminal display half-drawn
+#' frames, which reads as flicker. Composing the whole frame (cursor
+#' repositioning, per-line erase, leftover-row cleanup) into one `cat()` gives
+#' the terminal a single write per keystroke. Redraws that replace a previous
+#' frame are additionally wrapped in synchronized-output guards
+#' (`ESC[?2026h`/`ESC[?2026l`), which capable terminals use to repaint
+#' tear-free and other terminals ignore.
 #' @keywords internal
 #' @noRd
-move_cursor_up <- function(n) {
-  if (n > 0) {
-    cat(sprintf("\033[%dA", n))
+emit_frame <- function(lines, replace_lines = 0L) {
+  parts <- character(0)
+  if (replace_lines > 0L) {
+    parts <- c(parts, "\033[?2026h", sprintf("\033[%dA\r", replace_lines))
   }
+  parts <- c(parts, paste0("\033[2K", lines, "\n"))
+  leftover <- replace_lines - length(lines)
+  if (leftover > 0L) {
+    # The new frame is shorter (a scroll indicator disappeared): blank the
+    # leftover rows, then move back up so output continues right below the
+    # frame
+    parts <- c(parts, strrep("\033[2K\n", leftover), sprintf("\033[%dA", leftover))
+  }
+  if (replace_lines > 0L) {
+    parts <- c(parts, "\033[?2026l")
+  }
+  cat(paste(parts, collapse = ""))
+  invisible(lines)
 }
 
-#' Clear n lines
+#' Clear n lines above the cursor in one write
 #' @keywords internal
 #' @noRd
 clear_lines <- function(n) {
   if (n > 0) {
-    for (i in seq_len(n)) {
-      move_cursor_up(1)
-      cat("\033[2K") # Clear entire line
-    }
+    cat(strrep("\033[1A\033[2K", n))
   }
+}
+
+#' Hide the terminal text cursor while a live menu is on screen
+#'
+#' The hardware cursor hops across the frame during every redraw, which reads
+#' as flicker. Callers must pair this with `show_cursor()` via `on.exit()` so
+#' a cancelled menu or an error cannot leave the cursor hidden.
+#' @keywords internal
+#' @noRd
+hide_cursor <- function() {
+  cat("\033[?25l")
+}
+
+#' Restore the terminal text cursor
+#' @keywords internal
+#' @noRd
+show_cursor <- function() {
+  cat("\033[?25h")
 }
